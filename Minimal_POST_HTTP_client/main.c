@@ -15,7 +15,7 @@
 #elif defined(_WIN32) || defined(WIN32) // Windows
   #include <winsock2.h>
   #pragma comment(lib,"ws2_32.lib") // needed for linking
-  #define PLATFORM_WINDOWS          // my custom macro (preserves logic directives)
+  #define WINDOWS_PLATFORM          // my custom macro (preserves logic directives)
 #else
   #error "Unknown platform: This cody only suport Unix-like or Windows systems."
 #endif
