@@ -1,13 +1,27 @@
 /**
  * A simple, minimal, HTTP1.1 client, written in C.
+ * Supports most Unix-like systems (OSX, Linux) and Windows.
  * @author: Michal Spano
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netdb.h>
+
+// Detect most common Unix-like system
+#if (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+  #include <sys/socket.h>
+  #include <netdb.h>   /* socket, inet */
+  #include <unistd.h>  /* close()      */
+#elif defined(_WIN32) || defined(WIN32) // Windows
+  #include <winsock2.h>
+  #pragma comment(lib,"ws2_32.lib") // needed for linking
+  #define PLATFORM_WINDOWS          // my custom macro (preserves logic directives)
+#else
+  #error "Unknown platform: This cody only suport Unix-like or Windows systems."
+#endif
+// Further reading:
+// https://stackoverflow.com/a/26225829
+// https://handsonnetworkprogramming.com/articles/differences-windows-winsock-linux-unix-bsd-sockets-compatibility
 
 #define BUFF_MAX 4096 // some buffer (max) size
 
@@ -62,6 +76,15 @@ int main(void) {
   
   const char* content_type = "application/json"; // want to send as JSON
 
+  // Required for Windows (Winsock needs to be initialized)
+#ifdef WINDOWS_PLATFORM
+    WSADATA d;
+    if (WSAStartup(MAKEWORD(2, 2), &d)) {
+        fprintf(stderr, "Winsock intialization failed: %d", WSAGetLastError());
+        return 1;
+    }
+#endif
+
   // Initialize socket with AF_INET which specifies a type (i.e. family)
   // of the address (i.e. IPv4.)
   int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -89,7 +112,12 @@ int main(void) {
   // Try to open a socket connection, handle the case if the connection is refused.
   if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
     perror("Connection failed");
+#ifdef WINDOWS_PLATFORM
+    closesocket(sock);
+    WSACleanup();
+#else
     close(sock);
+#endif
     return -1;
   }
   
@@ -99,7 +127,12 @@ int main(void) {
   if (send(sock, request, strlen(request), 0) < 0) {
     perror("Failed to send request");
     free(request);
+#ifdef WINDOWS_PLATFORM
+    closesocket(sock);
+    WSACleanup();
+#else
     close(sock);
+#endif
     return -2;
   }
   
@@ -141,6 +174,11 @@ int main(void) {
   }
 
   // Close socket connection, return 0 (success)
-  close(sock);
+#ifdef WINDOWS_PLATFORM
+    closesocket(sock);
+    WSACleanup();
+#else
+    close(sock);
+#endif
   return 0;
 }
