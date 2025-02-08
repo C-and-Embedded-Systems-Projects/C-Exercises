@@ -1,11 +1,12 @@
 /**
  * A simple, minimal, HTTP1.1 client, written in C.
- * Supports most Unix-like systems (OSX, Linux) and Windows.
+ * Supports most Unix-like systems (e.g., OSX, Linux) and Windows.
  * @author: Michal Spano
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "config.h" /* custom config */
 
 // Detect most common Unix-like system
 #if (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
@@ -54,12 +55,8 @@ char* create_post_req(const char* host,
 }
 
 int main(void) {
-  // Defined by the user (can be extended to be read from stdin)
-  const int   PORT = 5000; 
-  const char* HOST = "localhost";
-  const char* PATH = "/example";
-
-  /** Example 'raw' JSON request body
+  /** Example 'raw' JSON request body (for the sake of demonstration, to an
+   * internal server):
    * ```
    * {
    *  "model": "llama3.2",
@@ -74,7 +71,7 @@ int main(void) {
     "\"stream\": false"
   "}";
   
-  const char* content_type = "application/json"; // want to send as JSON
+  const char* content_type = "application/json"; // want to send the above as JSON
 
   // Required for Windows (Winsock needs to be initialized)
 #ifdef WINDOWS_PLATFORM
