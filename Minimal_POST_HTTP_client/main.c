@@ -24,7 +24,7 @@
 // https://stackoverflow.com/a/26225829
 // https://handsonnetworkprogramming.com/articles/differences-windows-winsock-linux-unix-bsd-sockets-compatibility
 
-#define BUFF_MAX 4096 // some buffer (max) size
+#define BUFF_MAX 10240 // = 10KiB (~10kB)
 
 /**
  * A helper function that formats a POST HTTP request (version 1.1).
@@ -133,34 +133,55 @@ int main(void) {
     return -2;
   }
   
-  free(request); // The request buffer can now be safely freed.
+  free(request); // The POST request buffer can now be safely freed.
   
-  char res[BUFF_MAX];    // Response buffer for reading from socket
-  char* res_body = NULL; // Cumulative buffer to store response body
-  int total_size = 0;    // incremented per iteration
-  long bytes_received;   // a long should do for the current BUFF_MAX
+  char res_buffer[BUFF_MAX]; // Response buffer for reading from socket
+  char* res_body = NULL;     // Cumulative buffer to store response body
+  int total_size = 0;        // incremented per iteration
+  int headers_found = 0;     // the stream is continuous, headers passed once!
+  long bytes_received;       // a long should do for the current BUFF_MAX
 
   // Continue receiving bytes from the socket (response)
-  while ((bytes_received = recv(sock, res, BUFF_MAX - 1, 0)) > 0) {
-    res[bytes_received] = '\0'; // Terminate stream
+  while ((bytes_received = recv(sock, res_buffer, BUFF_MAX - 1, 0)) > 0) {
+    res_buffer[bytes_received] = '\0'; // Terminate stream
 
-    // Start of JSON response (after headers), remove escapes
-    // This extracts the actual body of the response (strstr locates a substring)
-    char* body = strstr(res, "\r\n\r\n");
-    if (body != NULL) {
-      body += 4;  // Skip "\r\n\r\n" (first 4 chars)
+    // Start of response's body (after headers), remove escapes (i.e.
+    // separator).
+    if (!headers_found) {
+      char* body = strstr(res_buffer, "\r\n\r\n");
+      if (body != NULL) {  // ignore if pattern not found
+        headers_found = 1; // update flag
+        body += 4;         // skip "\r\n\r\n" (first 4 chars)
+
+        int body_len = strlen(body);     // Size of current byte junk
+        res_body = malloc(body_len + 1); // Allocate memory; +1 for \0
+        if (res_body == NULL) {          // Ensure that there's enough space
+          perror("Initial memory allocation failed");
+          close(sock);
+          return 3;
+        }
       
-      int body_len = strlen(body);                  // Size of current data stream
-      total_size += body_len;                       // Increment the cumulative size
-      res_body = realloc(res_body, total_size + 1); // Reallocate; +1 for \0
-      if (res_body == NULL) {                       // Ensure that there's enough space.
-        perror("Memory allocation failed");
-        close(sock);
-        return 3;
+        memcpy(res_body, body, body_len); // copy context to buffer
+        total_size = body_len;            // Initial size = length of the first junk
+        res_body[total_size] = '\0';      // Terminate current substring in buffer
       }
-      
-      memcpy(res_body, body, body_len); // Copy body to response buffer
-      res_body[total_size] = '\0';      // Terminate current substring in buffer
+
+    } else {
+      // Further junk(s) of bytes, with no headers now
+      size_t new_size = total_size + bytes_received; // # of newly received bytes
+      char *temp = realloc(res_body, new_size + 1);  // Attempt to realloc extended buffer
+      if (temp == NULL) {                            // Not enough space, free, close socket
+          free(res_body);
+          close(sock);
+          perror("Memory reallocation failed");
+          return 3;
+      }
+
+      res_body = temp; // ok
+      // Copy new bytes to the buffer, shift the pointer
+      memcpy(res_body + total_size, res_buffer, bytes_received);
+      total_size = new_size;       // Udpate size
+      res_body[total_size] = '\0'; // Terminate
     }
   }
   
