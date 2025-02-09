@@ -29,12 +29,12 @@ make main
 Indeed, a client is useless without a server. You can certainly make a server
 on your **own** or use a **public** server (preferably with no restrictions).
 There's countless ways to make or initialize a server, you can get very
-*creative* (see [this][server-how-to] StackOverflow thread for some cool ideas).
-The only requirement is that the server should be able to receive `POST`
-requests. You can try implementing this in `C` as well (which is quite
-recommended!). Have a look [here][c-server]. However, if you only want to try
-this client, you can copy the following source code (Python) to a file and run
-it:
+*creative* (see [this][server-how-to] StackOverflow thread for some cool ideas;
+the `Unix` interface comes with some pre-built tools as well). The only
+requirement is that the server should be able to receive `POST` requests. You
+can try implementing this in `C` as well (which is highly recommended!). Have a
+look [here][c-server]. However, if you only want to try this client, you can
+copy the following source code (Python) to a file and run it:
 
 ```python3
 from flask import Flask, request
@@ -74,20 +74,19 @@ py -3 -m venv .venv
 pip install Flask
 ```
 
-and then run the server (in development mode) with
+and then initialize the server (in development mode) with
 
-```console
-flask --app main.py --debug run
-# don't terminate the process!
+```sh
+flask --app main.py --debug run # don't terminate!
 ```
 
 *Voilà*! You have a server running on `localhost:5000`. You can now run the
 client that you previously compiled. If you've followed the instructions
 correctly, you should see the message `"OK (request processed)"` in the
-client's output (and the request's body in the server's output). See the
-attached picture for a visual representation.
+client's output (and the request's body in the server's log). See the attached
+picture for a visual representation.
 
-[demo](./client_c_demo.png)
+![demo](./client_c_demo.png)
 
 <!-- LINKS -->
 [curl]: https://curl.se/docs/manpage.html
