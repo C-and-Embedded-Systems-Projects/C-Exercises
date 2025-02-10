@@ -157,7 +157,12 @@ int main(void) {
         res_body = malloc(body_len + 1); // Allocate memory; +1 for \0
         if (res_body == NULL) {          // Ensure that there's enough space
           perror("Initial memory allocation failed");
+#ifdef WINDOWS_PLATFORM
+          closesocket(sock);
+          WSACleanup();
+#else
           close(sock);
+#endif
           return 3;
         }
       
@@ -172,7 +177,12 @@ int main(void) {
       char *temp = realloc(res_body, new_size + 1);  // Attempt to realloc extended buffer
       if (temp == NULL) {                            // Not enough space, free, close socket
           free(res_body);
+#ifdef WINDOWS_PLATFORM
+          closesocket(sock);
+          WSACleanup();
+#else
           close(sock);
+#endif
           perror("Memory reallocation failed");
           return 3;
       }
