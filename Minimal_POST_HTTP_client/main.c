@@ -103,8 +103,7 @@ int main(void) {
   server_addr.sin_family = AF_INET;             // retain IP family (type)
   server_addr.sin_port = htons(PORT);           // same with port
 
-  // memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
-  // Potentially redundant call (preserved for documentation)
+  memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 
   // Try to open a socket connection, handle the case if the connection is refused.
   if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
